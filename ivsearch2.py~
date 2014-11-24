@@ -19,8 +19,8 @@
 #               AV_Raid, Signiant Server, Space Server, All Volumes
 #
 #------------------------------------------------------------------------------
-# 
-# 
+# TODO - add wildcard searches such as *
+# TODO - GUI
 ###############################################################################
 
 import os
@@ -46,6 +46,21 @@ def elapsed_time(start, end):
     else:
         print('\nTime elapsed: {:.2f} seconds'.format(time_elapsed))
     return
+
+"""
+def manage_threads(fnc, target_folder, user_entry):
+    collect = []
+    for i in range(2):
+        print i
+        thread = threading.Thread(target=fnc, args=(target_folder, user_entry))
+        thread.start()
+        collect.append(thread)
+        
+        
+        for thread in collect:
+            print thread
+            thread.join()
+"""
 
 def Main():
     
@@ -109,8 +124,16 @@ def Main():
     search_term = raw_input('\nEnter search item: ')
     
     if target3: # if choice 7 is made
-        print('\n\nSearching all main volumes. Press CTRL+C to cancel.\n')
-         
+        print('\n\nSearching all main volumes.')
+        
+        """
+       
+        manage_threads(search(target, search_term), target, search_term)
+        manage_threads(search(target2, search_term), target, search_term)
+        manage_threads(search(target3, search_term), target, search_term)
+        manage_threads(search(target4, search_term), target, search_term)
+        """
+        
         start = time.time()
         t = threading.Thread(target=search, args=(target, search_term))
         t.daemon = True
@@ -141,11 +164,10 @@ def Main():
         print(
         '\n\nSearching directories: \'{}\' and \'{}\'. Press CTRL+C to cancel.\n'
             .format(target, target2))
-        t1 = threading.Thread(target=search, args=(target, search_term))
-        t2 = threading.Thread(target=search, args=(target2, search_term))
-        
-        t1.daemon = True
-        t2.daemon = True
+        t1 = threading.Thread(name='directory1', target=search, 
+            args=(target, search_term))
+        t2 = threading.Thread(name='directory2', target=search, 
+            args=(target2, search_term))
         
         start = time.time()
         t1.start()

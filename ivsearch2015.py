@@ -119,8 +119,7 @@ def main():
     s1 = SearchFile()
     s1.get_location()
     
-    start = True
-    while start:
+    while s1.startloop:
         s1.set_target_folder(s1.choice)
         search_term = raw_input('\nEnter search item: ')      
        
@@ -160,7 +159,7 @@ def main():
         if new_search == 'y':
             continue
         else: 
-            start = False
+            s1.startloop = False
     print('Goodbye.')
         
 if __name__ == '__main__':

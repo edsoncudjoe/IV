@@ -16,7 +16,7 @@ class SearchFile(object):
         self.locations = ['/Volumes/AV_RAID', '/Volumes/Signiant_Sep13', 
         '/Volumes/Space', '/Volumes/AS_OFFLINE']
         self.startloop = True
-        self.extensions = ('.mov', '.mxf', '.h264')
+        self.extensions = ('.mov', '.mxf', '.h264', '.wav')
         
         
     def get_location(self):
@@ -119,41 +119,49 @@ def main():
     s1 = SearchFile()
     s1.get_location()
     
+    start = True
+    while start:
+        s1.set_target_folder(s1.choice)
+        search_term = raw_input('\nEnter search item: ')      
+       
 
-    s1.set_target_folder(s1.choice)
-    search_term = raw_input('\nEnter search item: ')      
-   
+        if s1.target3:
+            # set locations to separate threads
+            a = s1.set_thread(s1.target, search_term)
+            b = s1.set_thread(s1.target2, search_term)
+            c = s1.set_thread(s1.target3, search_term)
+            d = s1.set_thread(s1.target4, search_term)
+            
+            # group threads together
+            s1.collect.append(a)
+            s1.collect.append(b)
+            s1.collect.append(c)
+            s1.collect.append(d)
+            
+            # start searches
+            s1.start_threads()
+            s1.stop_threads()
+            
+        elif s1.target2:
+            #set locations
+            a = s1.set_thread(s1.target, search_term)
+            b = s1.set_thread(s1.target2, search_term)
+            
+            #group threads
+            s1.collect.append(a)
+            s1.collect.append(b)
+            
+            s1.start_threads()
+            s1.stop_threads()
+        else:
+            s1.search(s1.target, search_term)
 
-    if s1.target3:
-        # set locations to separate threads
-        a = s1.set_thread(s1.target, search_term)
-        b = s1.set_thread(s1.target2, search_term)
-        c = s1.set_thread(s1.target3, search_term)
-        d = s1.set_thread(s1.target4, search_term)
-        
-        # group threads together
-        s1.collect.append(a)
-        s1.collect.append(b)
-        s1.collect.append(c)
-        s1.collect.append(d)
-        
-        # start searches
-        s1.start_threads()
-        s1.stop_threads()
-        
-    elif s1.target2:
-        #set locations
-        a = s1.set_thread(s1.target, search_term)
-        b = s1.set_thread(s1.target2, search_term)
-        
-        #group threads
-        s1.collect.append(a)
-        s1.collect.append(b)
-        
-        s1.start_threads()
-        s1.stop_threads()
-    else:
-        s1.search(s1.target, search_term)
+        new_search = raw_input('\nWould you like to do another search?[y/n]: ').lower()
+        if new_search == 'y':
+            continue
+        else: 
+            start = False
+    print('Goodbye.')
         
 if __name__ == '__main__':
     main()

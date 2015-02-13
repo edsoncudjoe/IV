@@ -14,6 +14,11 @@
 #
 #------------------------------------------------------------------------------
 # 
+# Version 1.0.3
+#       Changed the collection of drive volumes into dictionary plus how 
+#       methods will access the volumes.
+#       Removed the create and remove target folder methods.
+#
 # Version 1.0.2
 #       Fixed an error that would appear after choosing to search for a second 
 #       item.
@@ -53,25 +58,25 @@ class SearchFile(object):
         self.collect = [] # list for collecting threads
         self.targets = [] # For collecting target search folders
         self.target = None
-        self.locations = ['/Volumes/AV_RAID', '/Volumes/Signiant_Sep13', 
-        '/Volumes/Space', '/Volumes/AS_OFFLINE']
+        self.locations = {
+        0: ['/Volumes/AV_RAID', 'AV_RAID'], 
+        1: ['/Volumes/Signiant_Sep13', 'Signiant'],
+        2: ['/Volumes/Space', 'Space'],
+        3: ['/Volumes/AS_OFFLINE', 'AS_OFFLINE']
+        }
         self.extensions = ('.mov', '.mxf', '.h264', '.wav')
         
+    
     def print_location(self): 
         """User chooses location to search."""
-        print(""" 
-                        Volume Options:
-
-                        1. AV_RAID
-                        2. Signiant
-                        3. Space(Ftp, Archive, etc)
-                        4. AS_OFFLINE
-                        5. AV_RAID + Space Server
-                        6. AV_RAID + Signiant
-                        7. All Volumes
-                        
-                        Q. Quit
-            """)
+        length = len(self.locations)
+        print('\n\t\t Volume Options:\n')
+        for k, v in self.locations.items():
+            print('\t\t {0}. {1}'.format(k + 1, v[1]))
+        print(
+            '\t\t {0}. AV_RAID + Space\n\t\t {1}. AV_RAID + Signiant\n\t\t {2}.'
+             ' All Volumes'.format(
+                length + 1, length + 2, length + 3))
       
     def set_target_folder(self):
         """Determines target folders that need to be searched."""
@@ -79,7 +84,7 @@ class SearchFile(object):
         while start:
             try:
                 self.choice = raw_input(
-        "Select your folder to search from the choices above.\n").lower()
+        "\nSelect your folder to search from the choices above.\n").lower()
                 if self.choice in str(range(1, 8)):
                     start = False
                 elif self.choice == 'q':
@@ -106,11 +111,11 @@ class SearchFile(object):
             self.double_thread(0)
             self.double_thread(1)
         elif self.choice == '7':
-            self.multi_thread(len(self.locations)) # catch in case a new directory is added
+            self.multi_thread(len(self.locations))
               
  
     def create_thread_targets(self, location):
-        self.target = self.locations[location]
+        self.target = self.locations[location][0]
         return self.target
 
     def multi_thread(self, num):
@@ -119,28 +124,37 @@ class SearchFile(object):
             self.targets.append(self.create_thread_targets(i))
 
     def double_thread(self, n):
-        """Applied when two volumes are selected to be searched."""
+        """Applied when only two volumes are selected to be searched."""
         self.targets.append(self.create_thread_targets(n))
 
 ###############################################################################
-# Not currently in use.
-    def remove_target_folder(self):
-        """Removes old target from list of directories"""
-        for location in self.locations:
-            print location
-        self.old = raw_input('Enter full name of folder to be removed: ')
-        self.locations.remove(self.old)
+# Not in use.
+#    def remove_target_folder(self):
+#        """Removes old target from list of directories"""
+#        self.print_location()
+#        #for location in self.locations:
+#        #    print location
+#        #self.old = raw_input('Enter full name of folder to be removed: ')
+#        old = int(raw_input('Enter the number of folder to be removed: '))
+#        #self.locations.remove(self.old)
+#        print('{0} has been removed'.format(self.locations[old - 1][1]))
+#        del self.locations[old - 1]
 
-    def create_target_folder(self):
-        """Adds a new folder to locations list"""
-        self.new_target = raw_input(
-        "Enter the FULL path of the new folder \(eg:/Volumes/Path/to/folder\): ")
-        self.locations.append(self.new_target)
-        return self.new_target
+
+#    def create_target_folder(self):
+#        """Adds a new folder to locations list"""
+#        #self.new_target = raw_input(
+#        #"Enter the FULL path of the new folder \(eg:/Volumes/Path/to/folder\): ")
+#        self.new_target_name = raw_input("Enter the name of the new directory. eg: \'Signiant\': ")
+#        self.new_target_location = raw_input("Enter the FULL path of the new folder \(eg:/Volumes/Path/to/folder\): ")
+#        self.locations[len(self.locations)+4] = [self.new_target_location, self.new_target_name]
+#        #self.locations.append(self.new_target)
+#        #return self.new_target
 ###############################################################################
 
     def search(self, target_folder, user_entry):
-        """Recursive search of folders for specified file."""
+        """Recursive search of folders for a user specified file. 
+        This method will only search for video and audio filetypes."""
         for root, dirs, files in os.walk(target_folder):
             for file in files:
                 if user_entry.lower() in file.lower():
@@ -149,7 +163,7 @@ class SearchFile(object):
                         print('\n') 
     
     def set_thread(self, target, search_term):
-        """Searches for item on its own thread."""
+        """Searches for one item on its own thread."""
         t = threading.Thread(target=self.search, args=(target, search_term))
         t.daemon = True
         return t
@@ -183,7 +197,7 @@ def main():
             s1.stop_threads()
 
         elif s1.target:
-            print('Searching {} for : {}'.format(s1.target, search_term))
+            print('Searching {0} for : {1}'.format(s1.target, search_term)) # fix for zero length field error.
             s1.search(s1.target, search_term)
 
         new_search = raw_input('\nWould you like to do another search?[y/n]: ').lower()

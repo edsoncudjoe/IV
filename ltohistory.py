@@ -21,6 +21,7 @@ import csv
 import re
 import sys
 import time
+import json
 import CatDVlib as cdv
 
 def byte2TB(byte):
@@ -74,10 +75,31 @@ def lto_to_list(data):
 			elif 'Intervideo' in c[0]:
 				continue
 			else:
-				gb = byte2TB(c[1])
-				a = re.search(r'(IV\d\d\d\d)', c[0])
-				final.append((str(a.group()), round(gb, 2)))
+				gb = byte2TB(c[1]) # converts GB byte data to TB
+				a = re.search(r'(IV\d\d\d\d)', c[0]) #removes unicode from IV numbers
+				final.append((str(a.group()), round(gb, 2))) 
 	return final
+
+# retrieve data from GBlabs JSON output
+def get_json(submitted):
+	lto = open(submitted, 'r')
+	jfile = json.load(lto)
+	return jfile
+
+def json_to_list(json):
+	json_collect = []
+	for i in json['tapes']:
+		json_collect.append((i['name'], i['used_size']))
+	return json_collect 
+
+def json_final(current):
+	final = []
+	for c in current:
+		tb = byte2TB(c[1]) # converts GB byte data to TB
+		a = re.search(r'(IV\d\d\d\d)', c[0]) #removes unicode from IV numbers
+		final.append((str(a.group()), round(tb, 2))) 
+	return final
+
 
 def get_client_items(name_size, clientlist):
 	"""Separates main list for each client"""
@@ -97,12 +119,15 @@ def get_storage_size(client_items):
 
 def catdv_login():
 	"""Enter CatDV server login details to get access to the API"""
-	user.getAuth()
-	print('Getting catalog data...')
-	user.getSessionKey()
-	user.getCatalogName()
-	time.sleep(1)
-	print('Catalog names and ID\'s have been loaded')
+	try:
+		user.getAuth()
+		print('\nGetting catalog data...\n')
+		user.getSessionKey()
+		user.getCatalogName()
+		time.sleep(1)
+		print('Catalog names and ID\'s have been loaded')
+	except Exception, e: #CatDVlib.getSessionKey() error
+		print(e)
 
 def get_barcodes(group_id):
 	"""Gets a list of IV barcodes for user-specified client."""
@@ -113,70 +138,109 @@ def get_barcodes(group_id):
 
 #def Main():
 try:
+	# Get latest LTO data file from Space LTO. Catches different file types.
+	try:
+		fname = sys.argv[1]
+		if '.json' in fname: 
+			jdata = get_json(fname)
+			current = json_to_list(jdata)
+			name_size = json_final(current)
+		elif '.csv' in fname:
+			lto_file = open(fname)
+			data = csv.reader(lto_file)
+			name_size = lto_to_list(data)
+		else:
+			print('\nCould not recognise the type of file submitted.'
+				'\nPlease use a \'.csv\' or \'.json\' file.\n')
+	except:
+		raise IndexError 
+
 	# Collect barcodes direct from CatDV API.
 	user = cdv.Cdvlib()
-	# check to login to API
-	auth = raw_input('Login to CatDV Api? [y/n]: ').lower()
-	if auth == 'y':
-		catdv_login()
-
 	
-	con_api = get_barcodes(user.catalog_names[1][1])
-	ng_api = get_barcodes(user.catalog_names[2][1])
-	ng_api.append(get_barcodes(user.catalog_names[3][1]))
-	cl_api = get_barcodes(user.catalog_names[0][1])
-	pw_api = get_barcodes(user.catalog_names[4][1])
+	# Login to CatDV API
+	start = True
+	while start:
+		auth = raw_input('Login to CatDV Api? [y/n]: ').lower()
+		if auth == 'y':
+			catdv_login()
 
-	user.deleteSession()
-#####################################################################
-	
+			# Lists created from data obtained by the CatDV API.
+			con_api = get_barcodes(user.catalog_names[1][1])
+			ng_api = get_barcodes(user.catalog_names[2][1])
+			ng_api.append(get_barcodes(user.catalog_names[3][1]))
+			cl_api = get_barcodes(user.catalog_names[0][1])
+			pw_api = get_barcodes(user.catalog_names[4][1])
 
-	# Open current LTO data file from Space
-	fname = sys.argv[1]
-	lto_file = open(fname)
-	data = csv.reader(lto_file)  
+			user.deleteSession()
 
-	# Collection of all tapes written
-	name_size = lto_to_list(data)
+			########## TEST OF RESULTS FROM API ##############################
+			ng_2 = get_client_items(name_size, ng_api)
+			pw_2 = get_client_items(name_size, pw_api)
+			cl_2 = get_client_items(name_size, cl_api)
+			##################################################################
 
-	# Original lists of current IV barcodes for each client.	
-	ng_list = set(get_CatDV_data('ngtv2015.txt'))
-	power_list = set(get_CatDV_data('power2015.txt'))
-	classic_list = set(get_CatDV_data('classicmedia.txt'))
+			########## TEST OF RESULTS FROM API #################################
+			ng_tb_2 = get_storage_size(ng_2)
+			pw_tb_2 = get_storage_size(pw_2)
+			cl_tb_2 = get_storage_size(cl_2)
+			print('\nFrom the API:\n{}TB written for NGTV\n{}TB written for' 
+				' Power\n{}TB written for'
+				' Classic Media/Dreamworks\n'.format(ng_tb_2, pw_tb_2, cl_tb_2))
+			#####################################################################
 
-	# Separate LTO Barcodes by client
-	ng = get_client_items(name_size, ng_list)
-	pw = get_client_items(name_size, power_list)
-	cl = get_client_items(name_size, classic_list)
+			start = False
+		
+		elif auth == 'n':	
+			# Physical lists of current IV barcodes for each client.
+			# Manually collected from CatDV	
+			ng_list = set(get_CatDV_data('ngtv2015.txt'))
+			power_list = set(get_CatDV_data('power2015.txt'))
+			classic_list = set(get_CatDV_data('classicmedia.txt'))
 
-	# Storage size in TB for client
-	ng_tb = get_storage_size(ng)
-	pw_tb = get_storage_size(pw)
-	cl_tb = get_storage_size(cl)
+			# Separate LTO Barcodes by client
+			ng = get_client_items(name_size, ng_list)
+			pw = get_client_items(name_size, power_list)
+			cl = get_client_items(name_size, classic_list)
 
-	print('{}TB written for NGTV\n{}TB written for Power\n{}TB written for'
-		'Classic Media/Dreamworks\n'.format(ng_tb, pw_tb, cl_tb))
+			# Storage size in TB for client
+			ng_tb = get_storage_size(ng)
+			pw_tb = get_storage_size(pw)
+			cl_tb = get_storage_size(cl)
+			
+			print('{}TB written for NGTV\n{}TB written for' 
+				' Power\n{}TB written for'
+				' Classic Media/Dreamworks\n'.format(ng_tb, pw_tb, cl_tb))
+
+			start = False
+		else:
+			print('Not a recognised input. Please try again.')
+
+
 	create_csv = raw_input(
 		'Do you wish to write the months archived tape barcodes + sizes to a csv file? [y/n]: ')
 	if create_csv == 'y':
 		make_csv_file(name_size)
 	else:
 		print('You have chosen not to write to a csv file.')
+except NameError, e: # undefined error. Make a note of the name
+	print(e)
+except IndexError:
+	print('No LTO file submitted. Reopen this program with the LTO history file.')
 except IOError:
 	print('The submitted file was not found')
 except AttributeError:
 	print('\nUnable to access the CatDV API. Please try again later.')
 except UnboundLocalError:
 	print('\nNo file has been submitted or the file does not exist.\n'
-		'Check that the \'.csv\' file has been saved and reopen this script\n' 
-		'along with the filename.')	
+		'Check that the \'.csv\' or \'.json\' file has been saved and' 
+		'reopen this script along with the filename.')	
 finally:
 	try:
-		lto_file.close()
+		if lto_file:
+			lto_file.close()
 	except NameError:
-		print('Unable to open LTO file')
-	except UnboundLocalError: 
-		print('\nUnable to close file.')
+		print('Closing application')
 	print('Goodbye!')
 #if __name__ == '__main__':
 #	Main()

@@ -5,24 +5,29 @@
 # This script provides the option to output the barcode names and file sizes as a csv file.
 # It can also print the amount of data in TB that has been written to LTO tape.
 # 
-#
-# Input: GBLabs 'history.csv' file. Used to draw the IV barcode numbers and size of each LTO tape.
-# Input: Separate lists of all IV LTO barcode numbers for each IV client (NGTV, Power etc..) 
-# Output: .csv file for past month  which details the IV barcode number plus its size in terabytes.
+# 
+# Input: GBLabs 'history' file. Both CSV and JSON files can be used as input. 
+#			The program will collect the Intervideo barcode numbers and size of
+#			 each LTO tape from these files. 
+# Input: Choice of using data from the CatDV API or text files that will have
+#		 to be manually created using the export option within CatDV. 
+#		The text files are separate lists of all IV LTO barcode numbers for
+#		 each Intervideo client (NGTV, Power etc..). 
+# Output: CSV file which details the Intervideo barcode numbers plus the tape size in terabytes.
 
 __author__ = "Edson Cudjoe"
 __version__ = "1.0.0"
 __email__ = "edson@intervideo.co.uk"
 __status__ = "Development"
 __date__ = "4 February 2015"
-#
-#NOTE: Take GB labs info from Feb 52015
+
+
 import csv
 import re
 import sys
 import time
 import json
-import CatDVlib as cdv
+from CatDVlib import Cdvlib
 
 def byte2TB(byte):
 	"""Converts input number from bytes to terabytes"""
@@ -53,9 +58,11 @@ def make_csv_file(final):
 	print('File has been created.')
     
 def lto_to_list(data):
-	"""Takes the output of CSV reader as input. converts this data into a list
+	"""
+	Takes the output of CSV reader as input. converts this data into a list
 	to be compared with the individual client barcode lists generated from 
-	CatDV data."""
+	CatDV data.
+	"""
 	collect = []
 	final = []
 	for item in data:
@@ -126,9 +133,9 @@ def catdv_login():
 		user.getCatalogName()
 		time.sleep(1)
 		print('Catalog names and ID\'s have been loaded')
-	except Exception, e: #CatDVlib.getSessionKey() error
-		print(e)
-
+	except:
+		raise AttributeError
+		
 def get_barcodes(group_id):
 	"""Gets a list of IV barcodes for user-specified client."""
 	user.iv_barcodes = []
@@ -137,10 +144,12 @@ def get_barcodes(group_id):
 	return user.sortBarcodes()
 
 #def Main():
+dload = '/Users/Edit4/Downloads/'
 try:
 	# Get latest LTO data file from Space LTO. Catches different file types.
 	try:
-		fname = sys.argv[1]
+		# Auto adds path. Only filename is needed
+		fname = dload + sys.argv[1] 
 		if '.json' in fname: 
 			jdata = get_json(fname)
 			current = json_to_list(jdata)
@@ -156,7 +165,7 @@ try:
 		raise IndexError 
 
 	# Collect barcodes direct from CatDV API.
-	user = cdv.Cdvlib()
+	user = Cdvlib()
 	
 	# Login to CatDV API
 	start = True
@@ -168,45 +177,47 @@ try:
 			# Lists created from data obtained by the CatDV API.
 			con_api = get_barcodes(user.catalog_names[1][1])
 			ng_api = get_barcodes(user.catalog_names[2][1])
-			ng_api.append(get_barcodes(user.catalog_names[3][1]))
+			ng_b = get_barcodes(user.catalog_names[3][1])
+			for i in ng_b:
+				ng_api.append(i)
 			cl_api = get_barcodes(user.catalog_names[0][1])
 			pw_api = get_barcodes(user.catalog_names[4][1])
 
 			user.deleteSession()
 
-			########## TEST OF RESULTS FROM API ##############################
-			ng_2 = get_client_items(name_size, ng_api)
-			pw_2 = get_client_items(name_size, pw_api)
-			cl_2 = get_client_items(name_size, cl_api)
-			##################################################################
+			ng_2 = set(get_client_items(name_size, ng_api))
+			pw_2 = set(get_client_items(name_size, pw_api))
+			cl_2 = set(get_client_items(name_size, cl_api))
 
-			########## TEST OF RESULTS FROM API #################################
 			ng_tb_2 = get_storage_size(ng_2)
 			pw_tb_2 = get_storage_size(pw_2)
 			cl_tb_2 = get_storage_size(cl_2)
 			print('\nFrom the API:\n{}TB written for NGTV\n{}TB written for' 
 				' Power\n{}TB written for'
 				' Classic Media/Dreamworks\n'.format(ng_tb_2, pw_tb_2, cl_tb_2))
-			#####################################################################
-
+			
 			start = False
 		
 		elif auth == 'n':	
+			print('You chose not to access the CatDV API.')
 			# Physical lists of current IV barcodes for each client.
 			# Manually collected from CatDV	
-			ng_list = set(get_CatDV_data('ngtv2015.txt'))
-			power_list = set(get_CatDV_data('power2015.txt'))
-			classic_list = set(get_CatDV_data('classicmedia.txt'))
+			ng_list = set(get_CatDV_data(dload + 'ngtv2015_2.txt'))
+			power_list = set(get_CatDV_data(dload + 'power2015_2.txt'))
+			classic_list = set(get_CatDV_data(dload + 'classic2015_2.txt'))
+			content_list = set(get_CatDV_data(dload + 'content2015_2.txt'))
 
 			# Separate LTO Barcodes by client
 			ng = get_client_items(name_size, ng_list)
 			pw = get_client_items(name_size, power_list)
 			cl = get_client_items(name_size, classic_list)
+			cn = get_client_items(name_size, content_list)
 
 			# Storage size in TB for client
 			ng_tb = get_storage_size(ng)
 			pw_tb = get_storage_size(pw)
 			cl_tb = get_storage_size(cl)
+			cn_tb = get_storage_size(cn)
 			
 			print('{}TB written for NGTV\n{}TB written for' 
 				' Power\n{}TB written for'
@@ -216,19 +227,19 @@ try:
 		else:
 			print('Not a recognised input. Please try again.')
 
-
+	# May no longer be needed
 	create_csv = raw_input(
 		'Do you wish to write the months archived tape barcodes + sizes to a csv file? [y/n]: ')
 	if create_csv == 'y':
 		make_csv_file(name_size)
 	else:
 		print('You have chosen not to write to a csv file.')
-except NameError, e: # undefined error. Make a note of the name
-	print(e)
+except NameError, e: # Name_size var has not been created. check CatDV 
+	print(e, 'Check CatDV data inputs: API login and/or filenames.')
 except IndexError:
 	print('No LTO file submitted. Reopen this program with the LTO history file.')
 except IOError:
-	print('The submitted file was not found')
+	print('The submitted CatDV file used for getting IV numbers was not found')
 except AttributeError:
 	print('\nUnable to access the CatDV API. Please try again later.')
 except UnboundLocalError:

@@ -93,7 +93,7 @@ class App:
 			self.response = requests.get(self.auth)
 			self.data = json.loads(self.response.text)
 			self.key = self.data['data']['jsessionid']
-			self.result.insert(END, self.key)
+			self.result.insert(END, "Logged in to CatDV successfully.\n")
 			return self.key 
 		except requests.exceptions.ConnectionError as e:
 			print('\nCan\'t access the API.'
@@ -101,9 +101,19 @@ class App:
 		except TypeError:
 			print('\nYou provided incorrect login details.'
 				' Please check and try again.')
-		#api_login = requests.get(self.auth)
+		
 
-	#def session_key(self):
+	def clipSearch(self):
+		self.item = self.term.get()
+		res = requests.get(
+			self.url + '/clips;jsessionid=' + self.key + '?filter=and((clip.name)'
+				'has({}))&include=userFields'.format(str(self.item)))
+		self.data = json.loads(res.text)
+		for i in self.data['data']['items']:
+			if i['userFields']['U7']:        
+				self.result.insert(END, i['userFields']['U7'] + ' ' + i['name'])
+			else:
+				self.result.insert(END, i['name'])
 
 	def deleteSession(self):
 		"""HTTP delete call to the API"""

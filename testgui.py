@@ -4,26 +4,32 @@ import json
 from CatDVlib import Cdvlib
 
 
-class App:
+class App(Frame):
 
-	def __init__(self, master):
+	def __init__(self, master=None):
 
 		self.user = Cdvlib()
 
-		frame = Frame(master)
-		frame.grid()
+		Frame.__init__(self, master)
+		self.grid()
+		self.createWidgets()
 
-		login = Frame(frame)
-		login.config(background="yellow")
-		login.grid(sticky=W)
+	def createWidgets(self):
+		main = Frame(self)
+		main.config(background="PeachPuff4", bd=3, relief=GROOVE)
+		main.grid()
 
-		usr_search = Frame(frame)
-		usr_search.config(background="blue")
-		usr_search.grid(sticky=W)
+		login = Frame(main)
+		login.grid(sticky=W, padx=5, pady=5)
 
-		res_list = Frame(frame)
-		res_list.config(background="yellow")
-		res_list.grid(sticky=W)
+		usr_search = Frame(main)
+		usr_search.grid(sticky=W, padx=5, pady=5)
+
+		res_list = Frame(main)
+		res_list.grid(sticky=W, padx=5, pady=5)
+
+		util_btns = Frame(main)
+		util_btns.grid(sticky=S+E, padx=2, pady=2)
 
 		######## USER LOGIN #######
 		self.usr = Label(login, text="username: ")
@@ -37,32 +43,39 @@ class App:
 		self.pwd.grid(row=0, column=2)
 
 		self.passwrd = StringVar()
-		self.pwd_ent = Entry(login, textvariable=self.passwrd)
+		self.pwd_ent = Entry(login, textvariable=self.passwrd, show="*")
 		self.pwd_ent.grid(row=0, column=3)
 
 		self.login_btn = Button(login, text="LOGIN", command=self.catdv_login)
 		self.login_btn.grid(row=0, column=4)
 
-		#self.logout_btn = Button(login, text="LOG OUT", command=self.deleteSession)
-		#self.login_btn.grid(row=1, column=5)
+		self.logout_btn = Button(login, text="LOG OUT", command=self.deleteSession)
+		self.login_btn.grid(row=0, column=5)
 
 		######## USER SEARCH ENTRY ######
 		self.term = StringVar()
-		self.clip = Entry(usr_search, width="70", textvariable=self.term)
+		self.clip = Entry(usr_search, width="90", textvariable=self.term)
 		self.clip.grid(row=0, column=0, sticky=E)
 
-		self.search_btn = Button(usr_search, text="SEARCH", command=self.print_search)
+		self.search_btn = Button(usr_search, text="SEARCH", command=self.get_query)
 		self.search_btn.grid(row=0, column=1, sticky=E)
+
+		##### scrollbar
+		self.scrollbar = Scrollbar(res_list)
+		self.scrollbar.grid(column=1, sticky=N+S+W)
 
 		######## RESULTS ###########
 		self.result = Listbox(res_list, bg='grey', width=100)
 		self.result.grid(row=0, column=0)
 
-		self.clr_btn = Button(frame, text="Clear", command=self.clear_text)
-		self.clr_btn.grid(sticky=E)
+		self.scrollbar.config(command=self.result.yview)
+		self.result.config(yscrollcommand=self.scrollbar.set)
 
-		self.button = Button(frame, text="QUIT", fg="red", command=frame.quit)
-		self.button.grid(sticky=E)
+		self.clr_btn = Button(util_btns, text="Clear", command=self.clear_text)
+		self.clr_btn.grid(row=1, column=0, sticky=E)
+
+		self.button = Button(util_btns, text="QUIT", fg="red", command=login.quit)
+		self.button.grid(row=1, column=1, sticky=E)
 
 
 
@@ -80,25 +93,29 @@ class App:
 
 ##################### CatDVLogin####################
 
-		
-	
-#user.getAuth()
-
 	def catdv_login(self):
 		"""Enter CatDV server login details to get access to the API"""
 		try:
 			u = self.usernm.get()
 			p = self.passwrd.get()
 			self.auth = self.user.url + "/session?usr=" + str(u) + "&pwd=" + str(p)
-			self.response = requests.get(self.auth)
-			self.data = json.loads(self.response.text)
+			
+			response = requests.get(self.auth)
+			#print response.text
+			self.data = json.loads(response.text)
 			self.key = self.data['data']['jsessionid']
+<<<<<<< HEAD
 			self.result.insert(END, "Logged in to CatDV successfully.\n")
+=======
+			self.result.insert(END, "Login successful.\n")
+			#self.result.insert(END, self.key)
+>>>>>>> march12
 			return self.key 
 		except requests.exceptions.ConnectionError as e:
 			print('\nCan\'t access the API.'
 				' Please check you have the right domain address')
 		except TypeError:
+<<<<<<< HEAD
 			print('\nYou provided incorrect login details.'
 				' Please check and try again.')
 		
@@ -114,18 +131,39 @@ class App:
 				self.result.insert(END, i['userFields']['U7'] + ' ' + i['name'])
 			else:
 				self.result.insert(END, i['name'])
+=======
+			self.result.insert(END, "You provided incorrect login details. Please try again")
+			# Maybe log to a file instead?
+			#print('\nYou provided incorrect login details.'
+			#	' Please check and try again.')
+
+	def get_query(self):
+		self.entry = self.term.get()
+		self.res = requests.get(
+			self.user.url + '/clips;jsessionid=' + self.key + '?filter=and((clip.name)'
+				'has({}))&include=userFields'.format(str(self.entry)))
+		self.data = json.loads(self.res.text)
+		for i in self.data['data']['items']:
+			try:
+				if i['userFields']['U7']:
+					self.result.insert(END, i['userFields']['U7'] + '  ' + i['name'])        
+				else:
+					self.result.insert(END, i['name'])
+			except KeyError:
+				pass
+>>>>>>> march12
 
 	def deleteSession(self):
 		"""HTTP delete call to the API"""
-		return requests.delete(self.url + '/session')
+		return requests.delete(self.user.url + '/session')
 
 
 root = Tk()
-app = App(root)
+app = App(master=root)
 
 root.geometry()
 #root.update()
 root.minsize(root.winfo_width(), root.winfo_height())
-root.title('api-search')
-root.mainloop()
+root.title('CatDV QuickSearch')
+app.mainloop()
 #root.destroy()

@@ -50,7 +50,7 @@ class App(Frame):
 		self.login_btn.grid(row=0, column=4)
 
 		self.logout_btn = Button(login, text="LOG OUT", command=self.deleteSession)
-		self.login_btn.grid(row=0, column=5)
+		self.logout_btn.grid(row=0, column=5)
 
 		######## USER SEARCH ENTRY ######
 		self.term = StringVar()
@@ -65,7 +65,7 @@ class App(Frame):
 		self.scrollbar.grid(column=1, sticky=N+S+W)
 
 		######## RESULTS ###########
-		self.result = Listbox(res_list, bg='grey', width=100)
+		self.result = Listbox(res_list, bg='grey', width=100, height=30)
 		self.result.grid(row=0, column=0)
 
 		self.scrollbar.config(command=self.result.yview)
@@ -77,7 +77,13 @@ class App(Frame):
 		self.button = Button(util_btns, text="QUIT", fg="red", command=login.quit)
 		self.button.grid(row=1, column=1, sticky=E)
 
+		#### Top Menu ####
+		self.menubar = Menu(self)
 
+		self.filemenu = Menu(self.menubar, tearoff=0)
+		self.filemenu.add_command(label="About")
+		self.filemenu.add_command(label="login")
+		self.menubar.add_cascade(label="File", menu=self.filemenu)
 
 	def print_login(self):
 		u = self.usernm.get()
@@ -104,34 +110,14 @@ class App(Frame):
 			#print response.text
 			self.data = json.loads(response.text)
 			self.key = self.data['data']['jsessionid']
-<<<<<<< HEAD
-			self.result.insert(END, "Logged in to CatDV successfully.\n")
-=======
 			self.result.insert(END, "Login successful.\n")
-			#self.result.insert(END, self.key)
->>>>>>> march12
-			return self.key 
+			return self.key
+		except Exception, e:
+			print(e) 
 		except requests.exceptions.ConnectionError as e:
 			print('\nCan\'t access the API.'
 				' Please check you have the right domain address')
 		except TypeError:
-<<<<<<< HEAD
-			print('\nYou provided incorrect login details.'
-				' Please check and try again.')
-		
-
-	def clipSearch(self):
-		self.item = self.term.get()
-		res = requests.get(
-			self.url + '/clips;jsessionid=' + self.key + '?filter=and((clip.name)'
-				'has({}))&include=userFields'.format(str(self.item)))
-		self.data = json.loads(res.text)
-		for i in self.data['data']['items']:
-			if i['userFields']['U7']:        
-				self.result.insert(END, i['userFields']['U7'] + ' ' + i['name'])
-			else:
-				self.result.insert(END, i['name'])
-=======
 			self.result.insert(END, "You provided incorrect login details. Please try again")
 			# Maybe log to a file instead?
 			#print('\nYou provided incorrect login details.'
@@ -151,7 +137,7 @@ class App(Frame):
 					self.result.insert(END, i['name'])
 			except KeyError:
 				pass
->>>>>>> march12
+
 
 	def deleteSession(self):
 		"""HTTP delete call to the API"""

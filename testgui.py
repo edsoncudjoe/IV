@@ -1,4 +1,5 @@
 from Tkinter import *
+#from ttk import *
 import requests
 import json
 from CatDVlib import Cdvlib
@@ -124,6 +125,7 @@ class App(Frame):
 			#	' Please check and try again.')
 
 	def get_query(self):
+		count = 0
 		self.entry = self.term.get()
 		self.res = requests.get(
 			self.user.url + '/clips;jsessionid=' + self.key + '?filter=and((clip.name)'
@@ -132,15 +134,21 @@ class App(Frame):
 		for i in self.data['data']['items']:
 			try:
 				if i['userFields']['U7']:
+					count += 1
 					self.result.insert(END, i['userFields']['U7'] + '  ' + i['name'])        
 				else:
+					count += 1
 					self.result.insert(END, i['name'])
 			except KeyError:
 				pass
+		else:
+			if count == 0:
+				self.result.insert(END, "No files found.")
 
 
 	def deleteSession(self):
 		"""HTTP delete call to the API"""
+		self.result.insert(END, "You have logged out.")
 		return requests.delete(self.user.url + '/session')
 
 

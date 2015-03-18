@@ -1,6 +1,5 @@
 Intervideo LTO History Reporter
 
-CatDVlib.py
 
 -----------
 What is it?
@@ -40,54 +39,12 @@ The Latest Version
 
 	1.0.0 Initial build
 
-CatDVlib.py
------------
-This library acts as a wrapper for CatDV's Server API. It was designed to 
-quickly download information from the server and acts as a replacement to
-manually exporting data from the CatDV GUI.
-
-To use you would have to first set the URL of the location of the CatDV
-server. This could possibly be 'localhost:8080' if the server is installed 
-on your local machine.
-
-Once the URL is set you can then login to the server to get access to the
-stored clips and catalog information.
-
-example:
-
-	from CatDVlib import Cdvlib
-
-	user = Cdvlib()
-
-	url = user.setUrl() # Sets the location of the CatDV Server API
-
-	# Stores the login session key once the user has logged in
-	key = user.getSessionKey()   
-
-	# Get clips of any given catalog.
-	clips = user.getCatalogClips(user.catalog_names[0][1])
-
-The Latest Version
-------------------
-
-	1.0.0 Initial Build
 
 ------------
 Installation
 ------------
-
-LTO History Reporter
---------------------
-
 Can be run from the command line. Currently needs the CatDVlib.py file to 
 correctly access the CatDV Server API. If this is not available, it can 
 still calculate information based on '.csv' files that have been outputted 
 from the CatDV desktop software.
-
-CatDVlib.py
------------
-
-Needs the Requests python library to be installed. The file can be run directly
-from the terminal. 
-
 

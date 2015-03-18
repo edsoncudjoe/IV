@@ -120,10 +120,7 @@ class App(Frame):
 				' Please check you have the right domain address')
 		except TypeError:
 			self.result.insert(END, "You provided incorrect login details. Please try again")
-			# Maybe log to a file instead?
-			#print('\nYou provided incorrect login details.'
-			#	' Please check and try again.')
-
+		
 	def get_query(self):
 		count = 0
 		self.entry = self.term.get()

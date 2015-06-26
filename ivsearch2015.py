@@ -127,31 +127,6 @@ class SearchFile(object):
         """Applied when only two volumes are selected to be searched."""
         self.targets.append(self.create_thread_targets(n))
 
-###############################################################################
-# Not in use.
-#    def remove_target_folder(self):
-#        """Removes old target from list of directories"""
-#        self.print_location()
-#        #for location in self.locations:
-#        #    print location
-#        #self.old = raw_input('Enter full name of folder to be removed: ')
-#        old = int(raw_input('Enter the number of folder to be removed: '))
-#        #self.locations.remove(self.old)
-#        print('{0} has been removed'.format(self.locations[old - 1][1]))
-#        del self.locations[old - 1]
-
-
-#    def create_target_folder(self):
-#        """Adds a new folder to locations list"""
-#        #self.new_target = raw_input(
-#        #"Enter the FULL path of the new folder \(eg:/Volumes/Path/to/folder\): ")
-#        self.new_target_name = raw_input("Enter the name of the new directory. eg: \'Signiant\': ")
-#        self.new_target_location = raw_input("Enter the FULL path of the new folder \(eg:/Volumes/Path/to/folder\): ")
-#        self.locations[len(self.locations)+4] = [self.new_target_location, self.new_target_name]
-#        #self.locations.append(self.new_target)
-#        #return self.new_target
-###############################################################################
-
     def search(self, target_folder, user_entry):
         """Recursive search of folders for a user specified file. 
         This method will only search for video and audio filetypes."""
